@@ -1,5 +1,5 @@
 [database]
-url = "https://sqlite3-production-f81f.up.railway.app/" # your sqlite database url
+url = "db.sqlite" # your sqlite database url
 
 [service]
 # How often to create a single digest summary of all summaries
@@ -15,7 +15,7 @@ host = "127.0.0.1"
 max_gpt_request_tokens = 2048
 
 
-[discord]
-channel_ids = [
-    "",
-]
+#[discord]
+#channel_ids = [
+#    "",
+#]
