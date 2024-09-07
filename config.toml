@@ -1,12 +1,19 @@
 [database]
-url = "db.sqlite"
+url = "https://sqlite3-production-f81f.up.railway.app/" # your sqlite database url
 
 [service]
-produce_digest_interval_seconds = 10800
+# How often to create a single digest summary of all summaries
+produce_digest_interval_seconds = 10800 # Default of every 3 hours
+# Where to store message logs, ensure this dir exists
 message_log_directory = "messages"
-port = 3000
+# Http api port
+port = 3001
+# Http api host
 host = "127.0.0.1"
+# Number of max request tokens in chat gpt api calls. The max allowed by GPT-4 is 4096
+# including the response tokens. So here, we want to leave room for the response
 max_gpt_request_tokens = 2048
+
 
 [discord]
 channel_ids = [
