@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Error, MySqlPool}; // Change from SqlitePool to MySqlPool
 use std::sync::Arc;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, sqlx::FromRow)]
 pub struct Summary {
     pub id: i64,
     pub daily_digest_id: Option<i64>,
@@ -12,7 +12,7 @@ pub struct Summary {
     pub timestamp: NaiveDateTime,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, sqlx::FromRow)]
 pub struct DailyDigestData {
     pub id: i64,
     pub text: String,
@@ -28,20 +28,24 @@ pub struct DailyDigest {
 }
 
 pub async fn fetch_summaries(pool: Arc<MySqlPool>) -> Vec<Summary> {
-    sqlx::query_as!(Summary, "SELECT * FROM summaries")
-        .fetch_all(&*pool)
-        .await
-        .unwrap_or_else(|_| vec![])
+    // Explicitly selecting all fields from the summaries table
+    sqlx::query_as!(
+        Summary,
+        "SELECT id, daily_digest_id, text, timestamp FROM summaries"
+    )
+    .fetch_all(&*pool)
+    .await
+    .unwrap_or_else(|_| vec![])
 }
 
 pub async fn insert_summary(pool: &MySqlPool, text: &str) -> Result<i64, Error> {
     let result = sqlx::query!(
-        "INSERT INTO summaries (daily_digest_id, text) VALUES (?, ?)",
+        "INSERT INTO summaries (daily_digest_id, text, timestamp) VALUES (?, ?, NOW())",
         None::<i64>,
         text
     )
-        .execute(pool)
-        .await?;
+    .execute(pool)
+    .await?;
 
     Ok(result.last_insert_id() as i64) // Use last_insert_id() for MySQL
 }
@@ -51,9 +55,9 @@ pub async fn fetch_daily_digests(pool: Arc<MySqlPool>) -> Vec<DailyDigest> {
         DailyDigestData,
         "SELECT id, text, timestamp FROM daily_digests"
     )
-        .fetch_all(&*pool)
-        .await
-        .unwrap_or_else(|_| vec![]);
+    .fetch_all(&*pool)
+    .await
+    .unwrap_or_else(|_| vec![]);
 
     stream::iter(digests)
         .then(|digest| {
@@ -61,12 +65,12 @@ pub async fn fetch_daily_digests(pool: Arc<MySqlPool>) -> Vec<DailyDigest> {
             async move {
                 let summaries = sqlx::query_as!(
                     Summary,
-                    "SELECT * FROM summaries WHERE daily_digest_id = ?",
+                    "SELECT id, daily_digest_id, text, timestamp FROM summaries WHERE daily_digest_id = ?",
                     digest.id
                 )
-                    .fetch_all(&*pool_clone)
-                    .await
-                    .unwrap_or_else(|_| vec![]);
+                .fetch_all(&*pool_clone)
+                .await
+                .unwrap_or_else(|_| vec![]);
 
                 DailyDigest {
                     id: digest.id,
@@ -88,10 +92,13 @@ pub async fn insert_daily_digest(
     let mut transaction = pool.begin().await?;
 
     // Insert the new digest and get its ID
-    let digest_id: i64 = sqlx::query!("INSERT INTO daily_digests (text) VALUES (?)", digest_text)
-        .execute(&mut *transaction)
-        .await?
-        .last_insert_id() as i64;
+    let digest_id: i64 = sqlx::query!(
+        "INSERT INTO daily_digests (text, timestamp) VALUES (?, NOW())",
+        digest_text
+    )
+    .execute(&mut *transaction)
+    .await?
+    .last_insert_id() as i64;
 
     // Update each summary to link it to the new digest
     for summary_id in summary_ids {
@@ -100,8 +107,8 @@ pub async fn insert_daily_digest(
             digest_id,
             summary_id
         )
-            .execute(&mut *transaction)
-            .await?;
+        .execute(&mut *transaction)
+        .await?;
     }
 
     // Commit the transaction
@@ -117,11 +124,11 @@ pub async fn fetch_latest_summaries(
     let offset = count * (page - 1);
     sqlx::query_as!(
         Summary,
-        "SELECT * FROM summaries ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+        "SELECT id, daily_digest_id, text, timestamp FROM summaries ORDER BY timestamp DESC LIMIT ? OFFSET ?",
         count as i64,
         offset as i64
     )
-        .fetch_all(&*pool)
-        .await
-        .unwrap_or_else(|_| vec![])
+    .fetch_all(&*pool)
+    .await
+    .unwrap_or_else(|_| vec![])
 }
