@@ -1,6 +1,6 @@
 [database]
-url = "mysql://root:ekTdNantGknCsXRjyjFmRCTiArGwPlCf@autorack.proxy.rlwy.net:37613/railway"
-
+# Use dynamic values injected from Railway bindings
+url = "${MYSQL_URL}"
 
 [service]
 # How often to create a single digest summary of all summaries
