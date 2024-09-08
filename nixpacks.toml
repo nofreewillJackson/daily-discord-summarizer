@@ -1,9 +1,7 @@
 [phases.setup]
 commands = [
-    "cargo clean",
-    "rm -rf /root/.cargo/registry"
+  "sqlx migrate run"  # Run migrations as part of the setup phase
 ]
-
 [phases.build]
 commands = [
     "cargo build --release"
