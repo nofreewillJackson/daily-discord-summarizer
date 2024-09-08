@@ -1,6 +1,10 @@
-[phases]
-# Add a custom pre-build phase to clean the Cargo cache
-setup = "cargo clean && rm -rf /root/.cargo/registry"
+[phases.setup]
+commands = [
+    "cargo clean",
+    "rm -rf /root/.cargo/registry"
+]
 
-# Define the build command
-build = "cargo build --release"
+[phases.build]
+commands = [
+    "cargo build --release"
+]
