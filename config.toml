@@ -1,5 +1,5 @@
 [database]
-url = "mysql://MYSQLUSER:MYSQLPASSWORD@MYSQLHOST:MYSQLPORT/MYSQLDATABASE"
+url = "MYSQL_URL"
 
 
 [service]
