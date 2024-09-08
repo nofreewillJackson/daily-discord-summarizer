@@ -1,5 +1,5 @@
 [database]
-url = "MYSQL_URL"
+url = "mysql://root:ekTdNantGknCsXRjyjFmRCTiArGwPlCf@autorack.proxy.rlwy.net:37613/railway"
 
 
 [service]
