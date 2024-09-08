@@ -1,5 +1,6 @@
 [database]
-url = "db.sqlite" # your sqlite database url
+url = "RAILWAY_MYSQL_URL"
+
 
 [service]
 # How often to create a single digest summary of all summaries
