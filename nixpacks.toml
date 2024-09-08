@@ -1,8 +1,10 @@
 [phases.setup]
 commands = [
-  "sqlx migrate run"  # Run migrations as part of the setup phase
+  "cargo install sqlx-cli --no-default-features --features mysql", # Install the sqlx CLI with MySQL support
+  "sqlx migrate run"  # Run the migrations after installing the CLI
 ]
+
 [phases.build]
 commands = [
-    "cargo build --release"
+  "cargo build --release"
 ]
