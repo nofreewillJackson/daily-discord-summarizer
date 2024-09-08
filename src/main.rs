@@ -32,14 +32,10 @@ async fn main() -> eyre::Result<()> {
     _ = config;
     let messages_base = config.service.message_log_directory;
 
-    // Initiate a connection to the database file, creating the file if required.
-    let database = sqlx::sqlite::SqlitePoolOptions::new()
+    // Initiate a connection to the MySQL database
+    let database = sqlx::mysql::MySqlPoolOptions::new()
         .max_connections(4)
-        .connect_with(
-            sqlx::sqlite::SqliteConnectOptions::new()
-                .filename(config.database.url)
-                .create_if_missing(true),
-        )
+        .connect(&config.database.url)
         .await
         .expect("Couldn't connect to database");
 
@@ -108,8 +104,8 @@ async fn main() -> eyre::Result<()> {
             "{}:{}",
             config.service.host, config.service.port
         ))
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         axum::serve(listener, app).await.unwrap();
     }));
 

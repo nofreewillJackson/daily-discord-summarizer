@@ -1,5 +1,5 @@
 {
-  "db_name": "SQLite",
+  "db_name": "MySQL",
   "query": "INSERT INTO daily_digests (text) VALUES (?)",
   "describe": {
     "columns": [],

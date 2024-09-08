@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use futures::stream::{self, StreamExt};
 use serde::{Deserialize, Serialize};
-use sqlx::{Error, SqlitePool};
+use sqlx::{Error, MySqlPool}; // Change from SqlitePool to MySqlPool
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize)]
@@ -27,33 +27,33 @@ pub struct DailyDigest {
     pub summaries: Vec<Summary>,
 }
 
-pub async fn fetch_summaries(pool: Arc<SqlitePool>) -> Vec<Summary> {
+pub async fn fetch_summaries(pool: Arc<MySqlPool>) -> Vec<Summary> {
     sqlx::query_as!(Summary, "SELECT * FROM summaries")
         .fetch_all(&*pool)
         .await
         .unwrap_or_else(|_| vec![])
 }
 
-pub async fn insert_summary(pool: &SqlitePool, text: &str) -> Result<i64, Error> {
+pub async fn insert_summary(pool: &MySqlPool, text: &str) -> Result<i64, Error> {
     let result = sqlx::query!(
         "INSERT INTO summaries (daily_digest_id, text) VALUES (?, ?)",
         None::<i64>,
         text
     )
-    .execute(pool)
-    .await?;
+        .execute(pool)
+        .await?;
 
-    Ok(result.last_insert_rowid())
+    Ok(result.last_insert_id() as i64) // Use last_insert_id() for MySQL
 }
 
-pub async fn fetch_daily_digests(pool: Arc<SqlitePool>) -> Vec<DailyDigest> {
+pub async fn fetch_daily_digests(pool: Arc<MySqlPool>) -> Vec<DailyDigest> {
     let digests = sqlx::query_as!(
         DailyDigestData,
         "SELECT id, text, timestamp FROM daily_digests"
     )
-    .fetch_all(&*pool)
-    .await
-    .unwrap_or_else(|_| vec![]);
+        .fetch_all(&*pool)
+        .await
+        .unwrap_or_else(|_| vec![]);
 
     stream::iter(digests)
         .then(|digest| {
@@ -64,9 +64,9 @@ pub async fn fetch_daily_digests(pool: Arc<SqlitePool>) -> Vec<DailyDigest> {
                     "SELECT * FROM summaries WHERE daily_digest_id = ?",
                     digest.id
                 )
-                .fetch_all(&*pool_clone)
-                .await
-                .unwrap_or_else(|_| vec![]);
+                    .fetch_all(&*pool_clone)
+                    .await
+                    .unwrap_or_else(|_| vec![]);
 
                 DailyDigest {
                     id: digest.id,
@@ -81,7 +81,7 @@ pub async fn fetch_daily_digests(pool: Arc<SqlitePool>) -> Vec<DailyDigest> {
 }
 
 pub async fn insert_daily_digest(
-    pool: &SqlitePool,
+    pool: &MySqlPool,
     digest_text: String,
     summary_ids: Vec<i64>,
 ) -> Result<(), Error> {
@@ -91,7 +91,7 @@ pub async fn insert_daily_digest(
     let digest_id: i64 = sqlx::query!("INSERT INTO daily_digests (text) VALUES (?)", digest_text)
         .execute(&mut *transaction)
         .await?
-        .last_insert_rowid();
+        .last_insert_id() as i64;
 
     // Update each summary to link it to the new digest
     for summary_id in summary_ids {
@@ -100,8 +100,8 @@ pub async fn insert_daily_digest(
             digest_id,
             summary_id
         )
-        .execute(&mut *transaction)
-        .await?;
+            .execute(&mut *transaction)
+            .await?;
     }
 
     // Commit the transaction
@@ -110,7 +110,7 @@ pub async fn insert_daily_digest(
 }
 
 pub async fn fetch_latest_summaries(
-    pool: Arc<SqlitePool>,
+    pool: Arc<MySqlPool>,
     count: usize,
     page: usize,
 ) -> Vec<Summary> {
@@ -121,7 +121,7 @@ pub async fn fetch_latest_summaries(
         count as i64,
         offset as i64
     )
-    .fetch_all(&*pool)
-    .await
-    .unwrap_or_else(|_| vec![])
+        .fetch_all(&*pool)
+        .await
+        .unwrap_or_else(|_| vec![])
 }

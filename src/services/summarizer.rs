@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use sqlx::SqlitePool;
+use sqlx::MySqlPool; // Use MySqlPool instead of SqlitePool
 use tokio::sync::mpsc::Receiver;
 use tracing::{error, info};
 
@@ -11,14 +11,14 @@ pub enum SummarizeRequest {
 pub struct SummarizerService {
     summarize_rx: Receiver<SummarizeRequest>,
     message_log_path: PathBuf,
-    db: Arc<SqlitePool>,
+    db: Arc<MySqlPool>, // Changed from SqlitePool to MySqlPool
 }
 
 impl SummarizerService {
     pub fn new(
         message_log_path: PathBuf,
         summarize_rx: Receiver<SummarizeRequest>,
-        db: Arc<SqlitePool>,
+        db: Arc<MySqlPool>, // Changed from SqlitePool to MySqlPool
     ) -> Self {
         Self {
             message_log_path,
@@ -26,6 +26,7 @@ impl SummarizerService {
             db,
         }
     }
+
     pub async fn run(&mut self) {
         while let Some(data) = self.summarize_rx.recv().await {
             match data {
@@ -50,7 +51,7 @@ impl SummarizerService {
                     };
                     info!("Summary: {summary}");
 
-                    // Save the summary to the DB.
+                    // Save the summary to the MySQL database.
                     if let Err(e) = crate::db::insert_summary(&self.db, &summary).await {
                         error!("Could not insert summary to DB: {e}, contents: {summary}");
                         continue;
