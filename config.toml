@@ -1,5 +1,5 @@
 [database]
-url = "RAILWAY_MYSQL_URL"
+url = "mysql://MYSQLUSER:MYSQLPASSWORD@MYSQLHOST:MYSQLPORT/MYSQLDATABASE"
 
 
 [service]
